@@ -12,18 +12,44 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 @HiltViewModel
-class NewsViewModel @Inject constructor(private val repo: NewsRepository) : ViewModel() {
+class NewsViewModel @Inject constructor(
+    private val repo: NewsRepository
+) : ViewModel() {
+
     private val _headlines = MutableStateFlow<List<ArticleDto>>(emptyList())
     val headlines = _headlines.asStateFlow()
 
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading = _isLoading.asStateFlow()
+
     init {
+        observeSourceChanges()
+    }
+
+    private fun observeSourceChanges() {
         viewModelScope.launch {
             repo.getSelectedSourceIds().collect { ids ->
-                if (ids.isNotEmpty()) {
-                    val response = repo.getTopHeadlines(ids.joinToString(","))
-                    _headlines.value = response.articles
+                if (ids.isEmpty()) {
+                    // 1. If no sources are selected, clear the list immediately
+                    _headlines.value = emptyList()
+                } else {
+                    // 2. If sources exist, fetch the news
+                    fetchHeadlines(ids.joinToString(","))
                 }
             }
+        }
+    }
+
+    private suspend fun fetchHeadlines(sourceIds: String) {
+        _isLoading.value = true
+        try {
+            val response = repo.getTopHeadlines(sourceIds)
+            _headlines.value = response.articles
+        } catch (e: Exception) {
+            // Log error or show snackbar
+            _headlines.value = emptyList()
+        } finally {
+            _isLoading.value = false
         }
     }
 
@@ -31,12 +57,12 @@ class NewsViewModel @Inject constructor(private val repo: NewsRepository) : View
         viewModelScope.launch {
             repo.saveArticle(
                 ArticleEntity(
-                    dto.url,
-                    dto.title,
-                    dto.description,
-                    dto.author,
-                    dto.urlToImage,
-                    dto.publishedAt
+                    url = dto.url,
+                    title = dto.title,
+                    description = dto.description,
+                    author = dto.author,
+                    urlToImage = dto.urlToImage,
+                    publishedAt = dto.publishedAt
                 )
             )
         }
