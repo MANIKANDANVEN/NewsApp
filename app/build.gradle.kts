@@ -97,5 +97,16 @@ dependencies {
     // Retrofit Gson converter
     implementation(libs.converter.gson)
 
+    // Jetpack Compose Navigation
+    implementation(libs.androidx.navigation.compose)
+
+    // Android WebView
+    implementation(libs.androidx.webkit)
+
+    // Async image
+    implementation(libs.coil.compose)
+
+    implementation(libs.androidx.hilt.navigation.compose)
+
 
 }
