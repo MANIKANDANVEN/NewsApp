@@ -17,11 +17,9 @@ class SourcesViewModel @Inject constructor(
     private val repo: NewsRepository
 ) : ViewModel() {
 
-    // List of all available sources from the API
-    private val _availableSources = MutableStateFlow<List<SourceDto>>(emptyList())
-    val availableSources = _availableSources.asStateFlow()
+    private val _sourcesState = MutableStateFlow<SourcesUiState>(SourcesUiState.Loading)
+    val sourcesState = _sourcesState.asStateFlow()
 
-    // Set of IDs currently selected by the user
     val selectedSourceIds = repo.getSelectedSourceIds()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
 
@@ -29,17 +27,33 @@ class SourcesViewModel @Inject constructor(
         loadSources()
     }
 
-    private fun loadSources() {
+    fun loadSources() {
         viewModelScope.launch {
-            repo.fetchAvailableSources().onSuccess {
-                _availableSources.value = it
+            _sourcesState.value = SourcesUiState.Loading
+            try {
+                val result = repo.getSources() // Make sure your repo returns SourceResponse
+                if (result.sources.isNotEmpty()) {
+                    _sourcesState.value = SourcesUiState.Success(result.sources)
+                } else {
+                    _sourcesState.value = SourcesUiState.Error("No English sources found.")
+                }
+            } catch (e: Exception) {
+                _sourcesState.value = SourcesUiState.Error(e.localizedMessage ?: "Unknown Error")
             }
         }
     }
 
     fun onSourceToggled(sourceId: String) {
         viewModelScope.launch {
-            repo.toggleSourceSelection(sourceId, selectedSourceIds.value)
+            repo.saveSelectedSources(selectedSourceIds.value.toMutableSet().apply {
+                if (contains(sourceId)) remove(sourceId) else add(sourceId)
+            })
         }
     }
+}
+
+sealed class SourcesUiState {
+    object Loading : SourcesUiState()
+    data class Success(val sources: List<SourceDto>) : SourcesUiState()
+    data class Error(val message: String) : SourcesUiState()
 }

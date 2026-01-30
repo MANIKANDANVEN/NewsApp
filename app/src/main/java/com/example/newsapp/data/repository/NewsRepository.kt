@@ -4,6 +4,7 @@ import com.example.newsapp.data.local.ArticleDao
 import com.example.newsapp.data.local.ArticleEntity
 import com.example.newsapp.data.local.SourcePreferences
 import com.example.newsapp.data.remote.models.SourceDto
+import com.example.newsapp.data.remote.models.SourceResponse
 import com.example.newsapp.data.remote.services.NewsApiService
 import jakarta.inject.Inject
 
@@ -20,7 +21,10 @@ class NewsRepository @Inject constructor(
 
     suspend fun getTopHeadlines(sourceIds: String) = api.getHeadlines(sourceIds, "ca734ffd56ec4612b32def016d40ff67")
 
-    suspend fun getSources() = api.getSources(apiKey = "ca734ffd56ec4612b32def016d40ff67")
+    suspend fun getSources(): SourceResponse {
+        // Replace YOUR_API_KEY with your actual string
+        return api.getSources(language = "en", apiKey = "ca734ffd56ec4612b32def016d40ff67")
+    }
 
     fun getSelectedSourceIds() = prefs.selectedSources
 
