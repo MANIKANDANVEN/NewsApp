@@ -21,6 +21,7 @@ import androidx.navigation.NavController
 import com.example.newsapp.ui.components.NewsCard
 import com.example.newsapp.viewmodel.NewsViewModel
 import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 @Composable
 fun HeadlinesScreen(
@@ -58,7 +59,13 @@ fun HeadlinesScreen(
                         article = article,
                         isSaved = isSaved,
                         onToggleSave = { viewModel.toggleSave(article, isSaved) },
-                        onClick = { /* navigate to detail */ }
+                        onClick = {
+                            val encodedUrl = URLEncoder.encode(
+                                article.url,
+                                StandardCharsets.UTF_8.toString()
+                            )
+                            navController.navigate("detail/$encodedUrl")
+                        }
                     )
                 }
             }

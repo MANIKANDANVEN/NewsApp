@@ -34,11 +34,11 @@ fun NewsNavGraph(navController: NavHostController) {
             SavedScreen(navController)
         }
         composable(
-            route = Screen.Detail.route,
+            route = "detail/{url}",
             arguments = listOf(navArgument("url") { type = NavType.StringType })
         ) { backStackEntry ->
             val url = backStackEntry.arguments?.getString("url") ?: ""
-            WebViewScreen(url)
+            WebViewScreen(url = url)
         }
     }
 }
