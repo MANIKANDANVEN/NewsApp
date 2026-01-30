@@ -8,7 +8,11 @@ import com.example.newsapp.data.repository.NewsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 @HiltViewModel
@@ -65,6 +69,23 @@ class NewsViewModel @Inject constructor(
                     publishedAt = dto.publishedAt
                 )
             )
+        }
+    }
+
+    // Add this inside NewsViewModel
+    val savedArticleUrls: StateFlow<Set<String>> = repo.getSavedArticles()
+        .map { articles -> articles.map { it.url }.toSet() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptySet())
+
+    fun toggleSave(dto: ArticleDto, isSaved: Boolean) {
+        viewModelScope.launch {
+            if (isSaved) {
+                // If already saved, delete it (Pass a dummy entity with the same URL)
+                repo.deleteArticle(ArticleEntity(url = dto.url, title = dto.title, description = null, author = null, urlToImage = null, publishedAt = ""))
+            } else {
+                // If not saved, add it
+                repo.saveArticle(ArticleEntity(dto.url, dto.title, dto.description, dto.author, dto.urlToImage, dto.publishedAt))
+            }
         }
     }
 }

@@ -29,6 +29,7 @@ fun HeadlinesScreen(
 ) {
     val articles by viewModel.headlines.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val savedUrls by viewModel.savedArticleUrls.collectAsState() // Observe saved articles
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (isLoading) {
@@ -52,13 +53,12 @@ fun HeadlinesScreen(
         } else {
             LazyColumn {
                 items(articles) { article ->
+                    val isSaved = savedUrls.contains(article.url)
                     NewsCard(
                         article = article,
-                        onSave = { viewModel.saveArticle(article) },
-                        onClick = {
-                            val encodedUrl = URLEncoder.encode(article.url, "UTF-8")
-                            navController.navigate("detail/$encodedUrl")
-                        }
+                        isSaved = isSaved,
+                        onToggleSave = { viewModel.toggleSave(article, isSaved) },
+                        onClick = { /* navigate to detail */ }
                     )
                 }
             }
