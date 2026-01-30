@@ -79,4 +79,23 @@ dependencies {
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
 
+    // Room
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
+
+    // Kotlin Coroutines
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.jetbrains.kotlinx.coroutines.android)
+
+    // DataStore (Preferences)
+    implementation(libs.androidx.datastore.preferences)
+
+    // Retrofit core
+    implementation(libs.retrofit.v290)
+
+    // Retrofit Gson converter
+    implementation(libs.converter.gson)
+
+
 }
