@@ -30,7 +30,7 @@ abstract class BaseViewModel : ViewModel() {
         }
     }
 
-    // 2. NEW version for simple launches (No StateFlow needed)
+    // simple launches (No StateFlow needed)
     protected fun safeLaunch(
         block: suspend CoroutineScope.() -> Unit
     ) {
