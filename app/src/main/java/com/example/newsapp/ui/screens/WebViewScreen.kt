@@ -63,7 +63,6 @@ fun WebViewScreen(url: String, navController: NavController) {
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             if (hasError) {
-                // Reuse your ErrorContent component!
                 ErrorContent(
                     message = "Failed to load the article. Please check your connection.",
                     onRetry = {
