@@ -14,11 +14,13 @@ junitVersion = "1.1.5"
 espressoCore = "3.5.1"
 kotlinxCoroutinesAndroid = "1.10.2"
 kotlinxCoroutinesCore = "1.10.2"
+kotlinxCoroutinesTest = "1.10.2"
 lifecycleRuntimeKtx = "2.6.1"
 activityCompose = "1.8.0"
 kotlin = "2.0.21"
 ksp = "2.0.0-1.0.21"
 composeBom = "2024.09.00"
+mockk = "1.14.9"
 moshiKotlin = "1.15.2"
 navigationCompose = "2.9.7"
 retrofit = "3.0.0"
@@ -26,6 +28,7 @@ retrofitVersion = "2.9.0"
 roomCompiler = "2.8.4"
 roomKtx = "2.8.4"
 roomRuntime = "2.8.4"
+turbine = "1.2.1"
 webkit = "1.15.0"
 
 [libraries]
@@ -65,9 +68,12 @@ androidx-compose-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-te
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
 kotlinx-coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android" }
 kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutinesCore" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinxCoroutinesTest" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 moshi-kotlin = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshiKotlin" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit" }
 retrofit-v290 = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofitVersion" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
