@@ -58,7 +58,7 @@ Error Handling: Triggered automatically via the BaseViewModel if the API key is 
 Search Responsiveness: Real-time filtering implemented via reactive StateFlow updates in the SearchDelegate.
 
 📂 Project Structure
-Plaintext
+
 com.example.newsapp
 ├── data             # Local (Room), Remote (Retrofit), and Repositories
 ├── di               # Hilt Modules (Network, Database)
