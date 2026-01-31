@@ -1,12 +1,12 @@
 package com.example.newsapp.viewmodel
 
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.newsapp.data.local.ArticleEntity
 import com.example.newsapp.data.remote.models.ArticleDto
 import com.example.newsapp.data.repository.NewsRepository
-import com.example.newsapp.utils.SearchDelegate
-import com.example.newsapp.utils.SearchDelegateImpl
+import com.example.newsapp.viewmodel.base.BaseViewModel
+import com.example.newsapp.delegate.SearchDelegate
+import com.example.newsapp.delegate.SearchDelegateImpl
 import com.example.newsapp.viewmodel.state.NewsUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class NewsViewModel @Inject constructor(
     private val repo: NewsRepository
-) : ViewModel(), SearchDelegate by SearchDelegateImpl() {
+) : BaseViewModel(), SearchDelegate by SearchDelegateImpl() {
 
     private val _uiState = MutableStateFlow<NewsUiState>(NewsUiState.Loading)
     val uiState: StateFlow<NewsUiState> = _uiState.asStateFlow()
@@ -42,14 +42,17 @@ class NewsViewModel @Inject constructor(
     }
 
     private fun observeSourceChanges() {
-        viewModelScope.launch {
+        // Use the simple safeLaunch for background flow observation
+        safeLaunch {
             repo.getSelectedSourceIds().collect { ids ->
                 if (ids.isEmpty()) {
                     currentSourceIds = null
                     _uiState.value = NewsUiState.Empty
                 } else {
                     currentSourceIds = ids.joinToString(",")
-                    refreshHeadlines() // Call our new public refresh function
+                    // refreshHeadlines already uses safeLaunch internally to
+                    // handle Loading and Error states, so we just call it.
+                    refreshHeadlines()
                 }
             }
         }
@@ -58,36 +61,30 @@ class NewsViewModel @Inject constructor(
     //function for Pull-to-Refresh and Retry Button
     fun refreshHeadlines() {
         val ids = currentSourceIds ?: return
-        viewModelScope.launch {
-            _uiState.value = NewsUiState.Loading
-            try {
-                // Using your repo's logic
-                val response = repo.getTopHeadlines(ids)
-                if (response.articles.isEmpty()) {
-                    _uiState.value = NewsUiState.Empty
-                } else {
-                    _uiState.value = NewsUiState.Success(response.articles)
-                }
-            } catch (e: Exception) {
-                _uiState.value = NewsUiState.Error("Failed to load news. Check your connection.")
+        safeLaunch(
+            stateFlow = _uiState,
+            loadingState = NewsUiState.Loading,
+            errorState = { NewsUiState.Error(it) }
+        ) {
+            val response = repo.getTopHeadlines(ids)
+            if (response.articles.isEmpty()) {
+                _uiState.value = NewsUiState.Empty
+            } else {
+                _uiState.value = NewsUiState.Success(response.articles)
             }
         }
     }
 
     fun saveArticle(dto: ArticleDto) {
-        viewModelScope.launch {
-            repo.saveArticle(
-                ArticleEntity(
-                    url = dto.url,
-                    title = dto.title,
-                    description = dto.description,
-                    author = dto.author,
-                    urlToImage = dto.urlToImage,
-                    publishedAt = dto.publishedAt
-                )
-            )
+        safeLaunch {
+            repo.saveArticle(dto.toEntity())
         }
     }
+
+    fun ArticleDto.toEntity() = ArticleEntity(
+        url = url, title = title, description = description,
+        author = author, urlToImage = urlToImage, publishedAt = publishedAt
+    )
 
     // Add this inside NewsViewModel
     val savedArticleUrls: StateFlow<Set<String>> = repo.getSavedArticles()

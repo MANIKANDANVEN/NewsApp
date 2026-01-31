@@ -1,4 +1,4 @@
-package com.example.newsapp.utils
+package com.example.newsapp.delegate
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
