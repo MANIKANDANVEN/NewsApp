@@ -1,6 +1,7 @@
 package com.example.newsapp.ui.screens
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.*
@@ -29,21 +30,30 @@ fun HeadlinesScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val filteredArticles by viewModel.filteredHeadlines.collectAsState()
 
-    Column {
+    Column(modifier = Modifier.fillMaxSize()) {
+
         CommonSearchBar(
             query = searchQuery,
             onQueryChange = { viewModel.onSearchQueryChange(it) },
             placeholder = "Search headlines..."
         )
 
-        Box(modifier = Modifier.weight(1f)) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        ) {
             when (val state = uiState) {
                 is NewsUiState.Loading -> {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center)
+                    )
                 }
+
                 is NewsUiState.Empty -> {
                     NoSourcesSelectedContent(Modifier.align(Alignment.Center))
                 }
+
                 is NewsUiState.Error -> {
                     ErrorContent(
                         message = state.message,
@@ -51,15 +61,15 @@ fun HeadlinesScreen(
                         onRetry = { viewModel.refreshHeadlines() }
                     )
                 }
+
                 is NewsUiState.Success -> {
-                    // 2. Check if the SEARCH result is empty, even if the API was successful
                     if (filteredArticles.isEmpty() && searchQuery.isNotEmpty()) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No matching articles found.")
-                        }
+                        Text(
+                            text = "No matching articles found.",
+                            modifier = Modifier.align(Alignment.Center)
+                        )
                     } else {
                         LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            // 3. Use filteredArticles instead of state.articles
                             items(filteredArticles) { article ->
                                 val isSaved = savedUrls.contains(article.url)
                                 NewsCard(

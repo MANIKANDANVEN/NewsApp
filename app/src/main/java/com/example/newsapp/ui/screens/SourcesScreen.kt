@@ -1,5 +1,6 @@
 package com.example.newsapp.ui.screens
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,14 +30,18 @@ fun SourcesScreen(viewModel: SourcesViewModel = hiltViewModel()) {
     // 1. Observe the filtered sources from the ViewModel
     val filteredSources by viewModel.filteredSources.collectAsState()
 
-    Column {
+    Column(modifier = Modifier.fillMaxSize()) {
         CommonSearchBar(
             query = searchQuery,
             onQueryChange = { viewModel.onSearchQueryChange(it) },
             placeholder = "Search sources..."
         )
 
-        Box(modifier = Modifier.weight(1f)) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxSize()
+        ) {
             when (val uiState = state) {
                 is SourcesUiState.Loading -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))

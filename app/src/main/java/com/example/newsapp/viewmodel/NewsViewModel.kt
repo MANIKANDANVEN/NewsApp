@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.newsapp.data.local.ArticleEntity
 import com.example.newsapp.data.remote.models.ArticleDto
 import com.example.newsapp.data.repository.NewsRepository
+import com.example.newsapp.utils.SearchDelegate
+import com.example.newsapp.utils.SearchDelegateImpl
 import com.example.newsapp.viewmodel.state.NewsUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
@@ -20,16 +22,20 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class NewsViewModel @Inject constructor(
     private val repo: NewsRepository
-) : ViewModel() {
+) : ViewModel(), SearchDelegate by SearchDelegateImpl() {
 
     private val _uiState = MutableStateFlow<NewsUiState>(NewsUiState.Loading)
     val uiState: StateFlow<NewsUiState> = _uiState.asStateFlow()
 
+    val filteredHeadlines = combine(uiState, searchQuery) { state, query ->
+        if (state is NewsUiState.Success) {
+            if (query.isBlank()) state.articles
+            else state.articles.filter { it.title.contains(query, ignoreCase = true) }
+        } else emptyList()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
     // Keep track of IDs for the refresh action
     private var currentSourceIds: String? = null
-
-    private val _searchQuery = MutableStateFlow("")
-    val searchQuery = _searchQuery.asStateFlow()
 
     init {
         observeSourceChanges()
@@ -117,13 +123,4 @@ class NewsViewModel @Inject constructor(
             }
         }
     }
-
-    val filteredHeadlines = combine(uiState, _searchQuery) { state, query ->
-        if (state is NewsUiState.Success) {
-            if (query.isBlank()) state.articles
-            else state.articles.filter { it.title.contains(query, ignoreCase = true) }
-        } else emptyList()
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    fun onSearchQueryChange(newQuery: String) { _searchQuery.value = newQuery }
 }
