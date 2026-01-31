@@ -3,6 +3,7 @@ package com.example.newsapp.ui.screens
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
@@ -14,9 +15,12 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.example.newsapp.data.remote.models.SourceDto
 import com.example.newsapp.ui.components.CommonSearchBar
 import com.example.newsapp.ui.components.SourceItem
+import com.example.newsapp.ui.theme.NewsAppTheme
 import com.example.newsapp.viewmodel.SourcesUiState
 import com.example.newsapp.viewmodel.SourcesViewModel
 
@@ -25,23 +29,38 @@ fun SourcesScreen(viewModel: SourcesViewModel = hiltViewModel()) {
     val state by viewModel.sourcesState.collectAsState()
     val selectedIds by viewModel.selectedSourceIds.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
-
-    // 1. Observe the filtered sources from the ViewModel
     val filteredSources by viewModel.filteredSources.collectAsState()
 
+    SourcesContent(
+        uiState = state,
+        searchQuery = searchQuery,
+        filteredSources = filteredSources,
+        selectedIds = selectedIds,
+        onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
+        onToggleSource = { viewModel.onSourceToggled(it) },
+        onRetry = { viewModel.loadSources() }
+    )
+}
+
+@Composable
+fun SourcesContent(
+    uiState: SourcesUiState,
+    searchQuery: String,
+    filteredSources: List<SourceDto>,
+    selectedIds: Set<String>,
+    onSearchQueryChange: (String) -> Unit,
+    onToggleSource: (String) -> Unit,
+    onRetry: () -> Unit
+) {
     Column(modifier = Modifier.fillMaxSize()) {
         CommonSearchBar(
             query = searchQuery,
-            onQueryChange = { viewModel.onSearchQueryChange(it) },
+            onQueryChange = onSearchQueryChange,
             placeholder = "Search sources..."
         )
 
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .fillMaxSize()
-        ) {
-            when (val uiState = state) {
+        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            when (uiState) {
                 is SourcesUiState.Loading -> {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
@@ -52,24 +71,23 @@ fun SourcesScreen(viewModel: SourcesViewModel = hiltViewModel()) {
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text("Error: ${uiState.message}", color = MaterialTheme.colorScheme.error)
-                        Button(onClick = { viewModel.loadSources() }) { Text("Retry") }
+                        Button(onClick = onRetry) { Text("Retry") }
                     }
                 }
 
                 is SourcesUiState.Success -> {
-                    // 2. Handle the "No results found" state for search
                     if (filteredSources.isEmpty() && searchQuery.isNotEmpty()) {
-                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("No sources match your search.")
-                        }
+                        Text(
+                            "No sources match your search.",
+                            modifier = Modifier.align(Alignment.Center)
+                        )
                     } else {
                         LazyColumn(modifier = Modifier.fillMaxSize()) {
-                            // 3. Use filteredSources here
                             items(filteredSources) { source ->
                                 SourceItem(
                                     source = source,
                                     isSelected = selectedIds.contains(source.id),
-                                    onToggle = { viewModel.onSourceToggled(source.id) }
+                                    onToggle = { onToggleSource(source.id) }
                                 )
                             }
                         }
@@ -77,5 +95,21 @@ fun SourcesScreen(viewModel: SourcesViewModel = hiltViewModel()) {
                 }
             }
         }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewSourcesContentSuccess() {
+    NewsAppTheme {
+        SourcesContent(
+            uiState = SourcesUiState.Success(emptyList()),
+            searchQuery = "",
+            filteredSources = listOf(/* Add mock SourceDto here */),
+            selectedIds = setOf("bbc-news"),
+            onSearchQueryChange = {},
+            onToggleSource = {},
+            onRetry = {}
+        )
     }
 }

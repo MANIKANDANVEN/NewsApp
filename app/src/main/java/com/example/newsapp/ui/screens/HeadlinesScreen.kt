@@ -16,12 +16,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.newsapp.data.remote.models.ArticleDto
 import com.example.newsapp.ui.components.CommonSearchBar
 import com.example.newsapp.ui.components.ErrorContent
 import com.example.newsapp.ui.components.NewsCard
+import com.example.newsapp.ui.theme.NewsAppTheme
 import com.example.newsapp.viewmodel.NewsViewModel
 import com.example.newsapp.viewmodel.state.NewsUiState
 import java.net.URLEncoder
@@ -37,44 +40,57 @@ fun HeadlinesScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val filteredArticles by viewModel.filteredHeadlines.collectAsState()
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    HeadlinesContent(
+        uiState = uiState,
+        searchQuery = searchQuery,
+        filteredArticles = filteredArticles,
+        savedUrls = savedUrls,
+        onSearchQueryChange = { viewModel.onSearchQueryChange(it) },
+        onRefresh = { viewModel.refreshHeadlines() },
+        onToggleSave = { article, isSaved -> viewModel.toggleSave(article, isSaved) },
+        onArticleClick = { article ->
+            val encodedUrl = URLEncoder.encode(article.url, StandardCharsets.UTF_8.toString())
+            navController.navigate("detail/$encodedUrl")
+        }
+    )
+}
 
+@Composable
+fun HeadlinesContent(
+    uiState: NewsUiState,
+    searchQuery: String,
+    filteredArticles: List<ArticleDto>,
+    savedUrls: Set<String>,
+    onSearchQueryChange: (String) -> Unit,
+    onRefresh: () -> Unit,
+    onToggleSave: (ArticleDto, Boolean) -> Unit,
+    onArticleClick: (ArticleDto) -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
         CommonSearchBar(
             query = searchQuery,
-            onQueryChange = { viewModel.onSearchQueryChange(it) },
+            onQueryChange = onSearchQueryChange,
             placeholder = "Search headlines..."
         )
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-        ) {
-            when (val state = uiState) {
+        Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
+            when (uiState) {
                 is NewsUiState.Loading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
-
                 is NewsUiState.Empty -> {
                     NoSourcesSelectedContent(Modifier.align(Alignment.Center))
                 }
-
                 is NewsUiState.Error -> {
                     ErrorContent(
-                        message = state.message,
+                        message = uiState.message,
                         modifier = Modifier.align(Alignment.Center),
-                        onRetry = { viewModel.refreshHeadlines() }
+                        onRetry = onRefresh
                     )
                 }
-
                 is NewsUiState.Success -> {
                     if (filteredArticles.isEmpty() && searchQuery.isNotEmpty()) {
-                        Text(
-                            text = "No matching articles found.",
-                            modifier = Modifier.align(Alignment.Center)
-                        )
+                        Text("No matching articles found.", modifier = Modifier.align(Alignment.Center))
                     } else {
                         LazyColumn(modifier = Modifier.fillMaxSize()) {
                             items(filteredArticles) { article ->
@@ -82,14 +98,8 @@ fun HeadlinesScreen(
                                 NewsCard(
                                     article = article,
                                     isSaved = isSaved,
-                                    onToggleSave = { viewModel.toggleSave(article, isSaved) },
-                                    onClick = {
-                                        val encodedUrl = URLEncoder.encode(
-                                            article.url,
-                                            StandardCharsets.UTF_8.toString()
-                                        )
-                                        navController.navigate("detail/$encodedUrl")
-                                    }
+                                    onToggleSave = { onToggleSave(article, isSaved) },
+                                    onClick = { onArticleClick(article) }
                                 )
                             }
                         }
@@ -111,6 +121,26 @@ fun NoSourcesSelectedContent(modifier: Modifier = Modifier) {
             "Go to the Sources tab to pick your favorite news outlets.",
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodyMedium
+        )
+    }
+}
+
+
+@Preview(showBackground = true, name = "Success State")
+@Composable
+fun PreviewHeadlinesContent() {
+    NewsAppTheme {
+        HeadlinesContent(
+            uiState = NewsUiState.Success(emptyList()), // Mocking success
+            searchQuery = "",
+            filteredArticles = listOf(
+                // article 1, article 2...
+            ),
+            savedUrls = emptySet(),
+            onSearchQueryChange = {},
+            onRefresh = {},
+            onToggleSave = { _, _ -> },
+            onArticleClick = {}
         )
     }
 }
