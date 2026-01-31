@@ -1,16 +1,20 @@
 package com.example.newsapp.viewmodel
 
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.newsapp.data.local.ArticleEntity
 import com.example.newsapp.data.remote.models.ArticleDto
 import com.example.newsapp.data.repository.NewsRepository
+import com.example.newsapp.viewmodel.base.BaseViewModel
+import com.example.newsapp.delegate.SearchDelegate
+import com.example.newsapp.delegate.SearchDelegateImpl
+import com.example.newsapp.viewmodel.state.NewsUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -18,59 +22,69 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class NewsViewModel @Inject constructor(
     private val repo: NewsRepository
-) : ViewModel() {
+) : BaseViewModel(), SearchDelegate by SearchDelegateImpl() {
 
-    private val _headlines = MutableStateFlow<List<ArticleDto>>(emptyList())
-    val headlines = _headlines.asStateFlow()
+    private val _uiState = MutableStateFlow<NewsUiState>(NewsUiState.Loading)
+    val uiState: StateFlow<NewsUiState> = _uiState.asStateFlow()
 
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading = _isLoading.asStateFlow()
+    val filteredHeadlines = combine(uiState, searchQuery) { state, query ->
+        if (state is NewsUiState.Success) {
+            if (query.isBlank()) state.articles
+            else state.articles.filter { it.title.contains(query, ignoreCase = true) }
+        } else emptyList()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Keep track of IDs for the refresh action
+    private var currentSourceIds: String? = null
 
     init {
         observeSourceChanges()
     }
 
     private fun observeSourceChanges() {
-        viewModelScope.launch {
+        // Use the simple safeLaunch for background flow observation
+        safeLaunch {
             repo.getSelectedSourceIds().collect { ids ->
                 if (ids.isEmpty()) {
-                    // 1. If no sources are selected, clear the list immediately
-                    _headlines.value = emptyList()
+                    currentSourceIds = null
+                    _uiState.value = NewsUiState.Empty
                 } else {
-                    // 2. If sources exist, fetch the news
-                    fetchHeadlines(ids.joinToString(","))
+                    currentSourceIds = ids.joinToString(",")
+                    // refreshHeadlines already uses safeLaunch internally to
+                    // handle Loading and Error states, so we just call it.
+                    refreshHeadlines()
                 }
             }
         }
     }
 
-    private suspend fun fetchHeadlines(sourceIds: String) {
-        _isLoading.value = true
-        try {
-            val response = repo.getTopHeadlines(sourceIds)
-            _headlines.value = response.articles
-        } catch (e: Exception) {
-            // Log error or show snackbar
-            _headlines.value = emptyList()
-        } finally {
-            _isLoading.value = false
+    //function for Pull-to-Refresh and Retry Button
+    fun refreshHeadlines() {
+        val ids = currentSourceIds ?: return
+        safeLaunch(
+            stateFlow = _uiState,
+            loadingState = NewsUiState.Loading,
+            errorState = { NewsUiState.Error(it) }
+        ) {
+            val response = repo.getTopHeadlines(ids)
+            if (response.articles.isEmpty()) {
+                _uiState.value = NewsUiState.Empty
+            } else {
+                _uiState.value = NewsUiState.Success(response.articles)
+            }
         }
     }
 
     fun saveArticle(dto: ArticleDto) {
-        viewModelScope.launch {
-            repo.saveArticle(
-                ArticleEntity(
-                    url = dto.url,
-                    title = dto.title,
-                    description = dto.description,
-                    author = dto.author,
-                    urlToImage = dto.urlToImage,
-                    publishedAt = dto.publishedAt
-                )
-            )
+        safeLaunch {
+            repo.saveArticle(dto.toEntity())
         }
     }
+
+    fun ArticleDto.toEntity() = ArticleEntity(
+        url = url, title = title, description = description,
+        author = author, urlToImage = urlToImage, publishedAt = publishedAt
+    )
 
     // Add this inside NewsViewModel
     val savedArticleUrls: StateFlow<Set<String>> = repo.getSavedArticles()
@@ -81,10 +95,28 @@ class NewsViewModel @Inject constructor(
         viewModelScope.launch {
             if (isSaved) {
                 // If already saved, delete it (Pass a dummy entity with the same URL)
-                repo.deleteArticle(ArticleEntity(url = dto.url, title = dto.title, description = null, author = null, urlToImage = null, publishedAt = ""))
+                repo.deleteArticle(
+                    ArticleEntity(
+                        url = dto.url,
+                        title = dto.title,
+                        description = null,
+                        author = null,
+                        urlToImage = null,
+                        publishedAt = ""
+                    )
+                )
             } else {
                 // If not saved, add it
-                repo.saveArticle(ArticleEntity(dto.url, dto.title, dto.description, dto.author, dto.urlToImage, dto.publishedAt))
+                repo.saveArticle(
+                    ArticleEntity(
+                        dto.url,
+                        dto.title,
+                        dto.description,
+                        dto.author,
+                        dto.urlToImage,
+                        dto.publishedAt
+                    )
+                )
             }
         }
     }

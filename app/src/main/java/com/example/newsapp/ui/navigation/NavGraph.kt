@@ -15,6 +15,7 @@ sealed class Screen(val route: String) {
     object Headlines : Screen("headlines")
     object Sources : Screen("sources")
     object Saved : Screen("saved")
+
     object Detail : Screen("detail/{url}")
 }
 
@@ -33,12 +34,14 @@ fun NewsNavGraph(navController: NavHostController) {
         composable(Screen.Saved.route) {
             SavedScreen(navController)
         }
+
+        // Use the route from your sealed class to keep it consistent
         composable(
             route = Screen.Detail.route,
             arguments = listOf(navArgument("url") { type = NavType.StringType })
         ) { backStackEntry ->
             val url = backStackEntry.arguments?.getString("url") ?: ""
-            WebViewScreen(url)
+            WebViewScreen(url = url, navController = navController)
         }
     }
 }

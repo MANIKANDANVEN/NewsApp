@@ -1,4 +1,4 @@
-package com.example.newsapp.data.remote.services
+package com.example.newsapp.services
 
 import com.example.newsapp.data.remote.models.NewsResponse
 import com.example.newsapp.data.remote.models.SourceResponse
