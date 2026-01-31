@@ -65,7 +65,6 @@ fun AppBottomBar(navController: NavController) {
                     label = { Text(label) },
                     selected = isSelected,
                     colors = NavigationBarItemDefaults.colors(
-                        // The "pill" background color when selected
                         indicatorColor = Color(0xFFF3E5F5),
                         selectedTextColor = Color(0xFF7E57C2),
                         unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant

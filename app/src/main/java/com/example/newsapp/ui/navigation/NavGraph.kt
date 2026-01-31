@@ -41,7 +41,6 @@ fun NewsNavGraph(navController: NavHostController) {
             arguments = listOf(navArgument("url") { type = NavType.StringType })
         ) { backStackEntry ->
             val url = backStackEntry.arguments?.getString("url") ?: ""
-            // Pass the navController here so WebViewScreen can use it for the back arrow
             WebViewScreen(url = url, navController = navController)
         }
     }

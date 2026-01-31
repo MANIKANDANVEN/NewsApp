@@ -8,8 +8,8 @@ data class SourceResponse(
 
 // Individual source details
 data class SourceDto(
-    val id: String,          // e.g., "bbc-news"
-    val name: String,        // e.g., "BBC News"
+    val id: String,
+    val name: String,
     val description: String?,
     val url: String?,
     val category: String?,
