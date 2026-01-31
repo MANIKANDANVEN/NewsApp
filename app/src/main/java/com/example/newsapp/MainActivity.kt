@@ -26,8 +26,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val navController = rememberNavController()
 
-            // Your Theme Wrapper
-            MaterialTheme {
+            NewsAppTheme {
                 Scaffold(
                     bottomBar = { AppBottomBar(navController) }
                 ) { innerPadding ->
