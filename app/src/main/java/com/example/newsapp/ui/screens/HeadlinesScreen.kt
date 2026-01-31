@@ -11,6 +11,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.newsapp.ui.components.CommonSearchBar
 import com.example.newsapp.ui.components.ErrorContent
 import com.example.newsapp.ui.components.NewsCard
 import com.example.newsapp.viewmodel.NewsViewModel
@@ -25,44 +26,56 @@ fun HeadlinesScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val savedUrls by viewModel.savedArticleUrls.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
+    val filteredArticles by viewModel.filteredHeadlines.collectAsState()
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        when (val state = uiState) {
-            is NewsUiState.Loading -> {
-                CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-            }
+    Column {
+        CommonSearchBar(
+            query = searchQuery,
+            onQueryChange = { viewModel.onSearchQueryChange(it) },
+            placeholder = "Search headlines..."
+        )
 
-            is NewsUiState.Empty -> {
-                NoSourcesSelectedContent(Modifier.align(Alignment.Center))
-            }
-
-            is NewsUiState.Error -> {
-                ErrorContent(
-                    message = state.message,
-                    modifier = Modifier.align(Alignment.Center),
-                    onRetry = {
-                        // Note: In a real app, you'd track the last IDs
-                        // or re-trigger the observer logic.
-                    }
-                )
-            }
-
-            is NewsUiState.Success -> {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
-                    items(state.articles) { article ->
-                        val isSaved = savedUrls.contains(article.url)
-                        NewsCard(
-                            article = article,
-                            isSaved = isSaved,
-                            onToggleSave = { viewModel.toggleSave(article, isSaved) },
-                            onClick = {
-                                val encodedUrl = URLEncoder.encode(
-                                    article.url,
-                                    StandardCharsets.UTF_8.toString()
+        Box(modifier = Modifier.weight(1f)) {
+            when (val state = uiState) {
+                is NewsUiState.Loading -> {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
+                }
+                is NewsUiState.Empty -> {
+                    NoSourcesSelectedContent(Modifier.align(Alignment.Center))
+                }
+                is NewsUiState.Error -> {
+                    ErrorContent(
+                        message = state.message,
+                        modifier = Modifier.align(Alignment.Center),
+                        onRetry = { viewModel.refreshHeadlines() }
+                    )
+                }
+                is NewsUiState.Success -> {
+                    // 2. Check if the SEARCH result is empty, even if the API was successful
+                    if (filteredArticles.isEmpty() && searchQuery.isNotEmpty()) {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("No matching articles found.")
+                        }
+                    } else {
+                        LazyColumn(modifier = Modifier.fillMaxSize()) {
+                            // 3. Use filteredArticles instead of state.articles
+                            items(filteredArticles) { article ->
+                                val isSaved = savedUrls.contains(article.url)
+                                NewsCard(
+                                    article = article,
+                                    isSaved = isSaved,
+                                    onToggleSave = { viewModel.toggleSave(article, isSaved) },
+                                    onClick = {
+                                        val encodedUrl = URLEncoder.encode(
+                                            article.url,
+                                            StandardCharsets.UTF_8.toString()
+                                        )
+                                        navController.navigate("detail/$encodedUrl")
+                                    }
                                 )
-                                navController.navigate("detail/$encodedUrl")
                             }
-                        )
+                        }
                     }
                 }
             }

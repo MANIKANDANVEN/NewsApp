@@ -1,6 +1,7 @@
 package com.example.newsapp.ui.screens
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -12,6 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.newsapp.ui.components.CommonSearchBar
 import com.example.newsapp.ui.components.SavedArticleRow
 import com.example.newsapp.viewmodel.SavedViewModel
 import java.net.URLEncoder
@@ -22,24 +24,44 @@ fun SavedScreen(
     navController: NavController,
     viewModel: SavedViewModel = hiltViewModel()
 ) {
-    val articles by viewModel.savedArticles.collectAsState()
+    // 2. Observe the filtered articles and the query
+    val articles by viewModel.filteredSavedArticles.collectAsState()
+    val searchQuery by viewModel.searchQuery.collectAsState()
 
-    if (articles.isEmpty()) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("No saved articles yet.")
-        }
-    } else {
-        LazyColumn {
-            items(articles) { article ->
-                // We reuse a simplified version of the NewsCard or a custom SavedRow
-                SavedArticleRow(
-                    article = article,
-                    onDelete = { viewModel.deleteArticle(article) },
-                    onClick = {
-                        val encodedUrl = URLEncoder.encode(article.url, StandardCharsets.UTF_8.toString())
-                        navController.navigate("detail/$encodedUrl")
+    Column(modifier = Modifier.fillMaxSize()) {
+        // 3. Add the reusable search bar
+        CommonSearchBar(
+            query = searchQuery,
+            onQueryChange = { viewModel.onSearchQueryChange(it) },
+            placeholder = "Search saved articles..."
+        )
+
+        Box(modifier = Modifier.weight(1f)) {
+            if (articles.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    val emptyMessage = if (searchQuery.isEmpty()) {
+                        "No saved articles yet."
+                    } else {
+                        "No results match your search."
                     }
-                )
+                    Text(emptyMessage)
+                }
+            } else {
+                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    items(articles) { article ->
+                        SavedArticleRow(
+                            article = article,
+                            onDelete = { viewModel.deleteArticle(article) },
+                            onClick = {
+                                val encodedUrl = URLEncoder.encode(
+                                    article.url,
+                                    StandardCharsets.UTF_8.toString()
+                                )
+                                navController.navigate("detail/$encodedUrl")
+                            }
+                        )
+                    }
+                }
             }
         }
     }

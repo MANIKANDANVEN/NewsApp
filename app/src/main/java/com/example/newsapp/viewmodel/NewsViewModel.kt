@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -26,6 +27,9 @@ class NewsViewModel @Inject constructor(
 
     // Keep track of IDs for the refresh action
     private var currentSourceIds: String? = null
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery = _searchQuery.asStateFlow()
 
     init {
         observeSourceChanges()
@@ -113,4 +117,13 @@ class NewsViewModel @Inject constructor(
             }
         }
     }
+
+    val filteredHeadlines = combine(uiState, _searchQuery) { state, query ->
+        if (state is NewsUiState.Success) {
+            if (query.isBlank()) state.articles
+            else state.articles.filter { it.title.contains(query, ignoreCase = true) }
+        } else emptyList()
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    fun onSearchQueryChange(newQuery: String) { _searchQuery.value = newQuery }
 }
