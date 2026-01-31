@@ -24,12 +24,11 @@ fun SavedScreen(
     navController: NavController,
     viewModel: SavedViewModel = hiltViewModel()
 ) {
-    // 2. Observe the filtered articles and the query
+    // Observe the filtered articles and the query
     val articles by viewModel.filteredSavedArticles.collectAsState()
     val searchQuery by viewModel.searchQuery.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize()) {
-        // 3. Add the reusable search bar
         CommonSearchBar(
             query = searchQuery,
             onQueryChange = { viewModel.onSearchQueryChange(it) },
