@@ -1,4 +1,4 @@
-package com.example.newsapp.data.repository.di
+package com.example.newsapp.di
 
 import android.content.Context
 import androidx.room.Room

@@ -1,4 +1,4 @@
-package com.example.newsapp.data.repository.di
+package com.example.newsapp.di
 
 import com.example.newsapp.data.remote.services.NewsApiService
 import dagger.Module
