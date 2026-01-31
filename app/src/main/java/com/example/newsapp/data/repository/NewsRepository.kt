@@ -3,9 +3,8 @@ package com.example.newsapp.data.repository
 import com.example.newsapp.data.local.ArticleDao
 import com.example.newsapp.data.local.ArticleEntity
 import com.example.newsapp.data.local.SourcePreferences
-import com.example.newsapp.data.remote.models.SourceDto
 import com.example.newsapp.data.remote.models.SourceResponse
-import com.example.newsapp.data.remote.services.NewsApiService
+import com.example.newsapp.services.NewsApiService
 import jakarta.inject.Inject
 
 class NewsRepository @Inject constructor(

@@ -4,7 +4,7 @@ import com.example.newsapp.data.local.ArticleDao
 import com.example.newsapp.data.local.SourcePreferences
 import com.example.newsapp.data.remote.models.SourceDto
 import com.example.newsapp.data.remote.models.SourceResponse
-import com.example.newsapp.data.remote.services.NewsApiService
+import com.example.newsapp.services.NewsApiService
 import io.mockk.coEvery
 import io.mockk.coVerify
 import io.mockk.mockk
