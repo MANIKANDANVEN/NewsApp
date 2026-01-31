@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.newsapp.data.local.ArticleEntity
 import com.example.newsapp.data.remote.models.ArticleDto
 import com.example.newsapp.data.repository.NewsRepository
+import com.example.newsapp.viewmodel.state.NewsUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,11 +21,11 @@ class NewsViewModel @Inject constructor(
     private val repo: NewsRepository
 ) : ViewModel() {
 
-    private val _headlines = MutableStateFlow<List<ArticleDto>>(emptyList())
-    val headlines = _headlines.asStateFlow()
+    private val _uiState = MutableStateFlow<NewsUiState>(NewsUiState.Loading)
+    val uiState: StateFlow<NewsUiState> = _uiState.asStateFlow()
 
-    private val _isLoading = MutableStateFlow(false)
-    val isLoading = _isLoading.asStateFlow()
+    // Keep track of IDs for the refresh action
+    private var currentSourceIds: String? = null
 
     init {
         observeSourceChanges()
@@ -34,26 +35,32 @@ class NewsViewModel @Inject constructor(
         viewModelScope.launch {
             repo.getSelectedSourceIds().collect { ids ->
                 if (ids.isEmpty()) {
-                    // 1. If no sources are selected, clear the list immediately
-                    _headlines.value = emptyList()
+                    currentSourceIds = null
+                    _uiState.value = NewsUiState.Empty
                 } else {
-                    // 2. If sources exist, fetch the news
-                    fetchHeadlines(ids.joinToString(","))
+                    currentSourceIds = ids.joinToString(",")
+                    refreshHeadlines() // Call our new public refresh function
                 }
             }
         }
     }
 
-    private suspend fun fetchHeadlines(sourceIds: String) {
-        _isLoading.value = true
-        try {
-            val response = repo.getTopHeadlines(sourceIds)
-            _headlines.value = response.articles
-        } catch (e: Exception) {
-            // Log error or show snackbar
-            _headlines.value = emptyList()
-        } finally {
-            _isLoading.value = false
+    //function for Pull-to-Refresh and Retry Button
+    fun refreshHeadlines() {
+        val ids = currentSourceIds ?: return
+        viewModelScope.launch {
+            _uiState.value = NewsUiState.Loading
+            try {
+                // Using your repo's logic
+                val response = repo.getTopHeadlines(ids)
+                if (response.articles.isEmpty()) {
+                    _uiState.value = NewsUiState.Empty
+                } else {
+                    _uiState.value = NewsUiState.Success(response.articles)
+                }
+            } catch (e: Exception) {
+                _uiState.value = NewsUiState.Error("Failed to load news. Check your connection.")
+            }
         }
     }
 
@@ -81,10 +88,28 @@ class NewsViewModel @Inject constructor(
         viewModelScope.launch {
             if (isSaved) {
                 // If already saved, delete it (Pass a dummy entity with the same URL)
-                repo.deleteArticle(ArticleEntity(url = dto.url, title = dto.title, description = null, author = null, urlToImage = null, publishedAt = ""))
+                repo.deleteArticle(
+                    ArticleEntity(
+                        url = dto.url,
+                        title = dto.title,
+                        description = null,
+                        author = null,
+                        urlToImage = null,
+                        publishedAt = ""
+                    )
+                )
             } else {
                 // If not saved, add it
-                repo.saveArticle(ArticleEntity(dto.url, dto.title, dto.description, dto.author, dto.urlToImage, dto.publishedAt))
+                repo.saveArticle(
+                    ArticleEntity(
+                        dto.url,
+                        dto.title,
+                        dto.description,
+                        dto.author,
+                        dto.urlToImage,
+                        dto.publishedAt
+                    )
+                )
             }
         }
     }
