@@ -1,4 +1,4 @@
-**Updated Pointwise Summary**
+Summary
 
 1. Clean Architecture & MVVM: Established a clear separation of concerns by dividing the project into Data, Domain, and Presentation layers, ensuring the app is scalable and easy to navigate.
 
