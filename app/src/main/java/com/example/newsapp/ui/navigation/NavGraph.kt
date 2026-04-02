@@ -34,6 +34,8 @@ fun NewsNavGraph(navController: NavHostController) {
         composable(Screen.Saved.route) {
             SavedScreen(navController)
         }
+
+        // Use the route from your sealed class to keep it consistent
         composable(
             route = Screen.Detail.route,
             arguments = listOf(navArgument("url") { type = NavType.StringType })
