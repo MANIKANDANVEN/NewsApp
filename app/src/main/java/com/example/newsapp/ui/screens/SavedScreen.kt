@@ -67,9 +67,9 @@ fun SavedContent(
         ) {
             if (articles.isEmpty()) {
                 val emptyMessage = if (searchQuery.isEmpty()) {
-                    "No saved articles yet."
+                    stringResource(R.string.SaveScreen_noSavedArticles)
                 } else {
-                    "No results match your search."
+                    stringResource(R.string.SaveScreen_noResults)
                 }
 
                 Text(
