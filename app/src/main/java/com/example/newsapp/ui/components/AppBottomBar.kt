@@ -17,19 +17,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.newsapp.R
 import com.example.newsapp.ui.navigation.Screen
 
 @Composable
 fun AppBottomBar(navController: NavController) {
     val items = listOf(
-        Triple(Screen.Headlines, "Headlines", Icons.Default.Home),
-        Triple(Screen.Sources, "Sources", Icons.Default.List),
-        Triple(Screen.Saved, "Saved", Icons.Default.Favorite)
+        Triple(Screen.Headlines, stringResource(R.string.AppBottomBar_headlines), Icons.Default.Home),
+        Triple(Screen.Sources, stringResource(R.string.AppBottomBar_sources), Icons.Default.List),
+        Triple(Screen.Saved, stringResource(R.string.AppBottomBar_saved), Icons.Default.Favorite)
     )
 
     // Using a Surface wrapper to handle the curve and elevation properly

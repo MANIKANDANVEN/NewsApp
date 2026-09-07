@@ -13,14 +13,16 @@ import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.newsapp.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CommonSearchBar(
     query: String,
     onQueryChange: (String) -> Unit,
-    placeholder: String = "Search...",
+    placeholder: String = stringResource(R.string.SearchBar_defaultPlaceholder),
     modifier: Modifier = Modifier
 ) {
     // The new SearchBar API separates the "InputField" from the "Expandable" part
@@ -40,7 +42,7 @@ fun CommonSearchBar(
                 trailingIcon = {
                     if (query.isNotEmpty()) {
                         IconButton(onClick = { onQueryChange("") }) {
-                            Icon(Icons.Default.Close, contentDescription = "Clear search")
+                            Icon(Icons.Default.Close, contentDescription = stringResource(R.string.SearchBar_clearDescription))
                         }
                     }
                 }

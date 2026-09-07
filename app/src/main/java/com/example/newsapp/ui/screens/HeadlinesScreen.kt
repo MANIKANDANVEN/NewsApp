@@ -15,11 +15,13 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
+import com.example.newsapp.R
 import com.example.newsapp.data.remote.models.ArticleDto
 import com.example.newsapp.ui.components.CommonSearchBar
 import com.example.newsapp.ui.components.ErrorContent
@@ -70,7 +72,7 @@ fun HeadlinesContent(
         CommonSearchBar(
             query = searchQuery,
             onQueryChange = onSearchQueryChange,
-            placeholder = "Search headlines..."
+            placeholder = stringResource(R.string.HeadlinesScreen_searchPlaceholder)
         )
 
         Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
@@ -90,7 +92,7 @@ fun HeadlinesContent(
                 }
                 is NewsUiState.Success -> {
                     if (filteredArticles.isEmpty() && searchQuery.isNotEmpty()) {
-                        Text("No matching articles found.", modifier = Modifier.align(Alignment.Center))
+                        Text(stringResource(R.string.HeadlinesScreen_noMatchingArticles), modifier = Modifier.align(Alignment.Center))
                     } else {
                         LazyColumn(modifier = Modifier.fillMaxSize()) {
                             items(filteredArticles) { article ->
@@ -116,9 +118,9 @@ fun NoSourcesSelectedContent(modifier: Modifier = Modifier) {
         modifier = modifier.padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text("No Sources Selected", style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(R.string.HeadlinesScreen_noSourcesSelectedTitle), style = MaterialTheme.typography.headlineSmall)
         Text(
-            "Go to the Sources tab to pick your favorite news outlets.",
+            stringResource(R.string.HeadlinesScreen_noSourcesSelectedMessage),
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.bodyMedium
         )

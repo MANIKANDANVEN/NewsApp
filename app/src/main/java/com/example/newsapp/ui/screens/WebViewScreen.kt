@@ -24,8 +24,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.navigation.NavController
+import com.example.newsapp.R
 import com.example.newsapp.ui.components.ErrorContent
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
@@ -53,7 +55,7 @@ fun WebViewScreen(url: String, navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Article", style = MaterialTheme.typography.titleMedium) },
+                title = { Text(stringResource(R.string.WebViewScreen_title), style = MaterialTheme.typography.titleMedium) },
                 navigationIcon = {
                     IconButton(onClick = {
                         if (webView?.canGoBack() == true) {
@@ -62,7 +64,7 @@ fun WebViewScreen(url: String, navController: NavController) {
                             navController.popBackStack()
                         }
                     }) {
-                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(imageVector = Icons.Default.ArrowBack, contentDescription = stringResource(R.string.WebViewScreen_backDescription))
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -75,7 +77,7 @@ fun WebViewScreen(url: String, navController: NavController) {
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             if (hasError) {
                 ErrorContent(
-                    message = "Failed to load the article. Please check your connection.",
+                    message = stringResource(R.string.WebViewScreen_loadError),
                     onRetry = {
                         hasError = false
                         webView?.reload()

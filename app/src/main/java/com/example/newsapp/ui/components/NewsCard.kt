@@ -23,9 +23,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.newsapp.R
 import com.example.newsapp.data.remote.models.ArticleDto
 
 @Composable
@@ -65,7 +67,7 @@ fun NewsCard(
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text(text = if (isSaved) "Remove" else "Save")
+                    Text(text = if (isSaved) stringResource(R.string.NewsCard_remove) else stringResource(R.string.NewsCard_save))
                 }
             }
         }
