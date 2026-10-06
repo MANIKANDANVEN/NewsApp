@@ -1,3 +1,5 @@
+Summary
+
  1. Clean Architecture & MVVM: Established a clear separation of concerns by dividing the project                                                                                   
      into Data, Domain, and Presentation layers, ensuring the app is scalable and easy to navigate.                                                                                  
   2. BaseViewModel & Centralized Logic: Engineered a BaseViewModel that handles coroutine lifecycles                                                                                 
