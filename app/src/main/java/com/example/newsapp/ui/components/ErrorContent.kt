@@ -8,8 +8,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.newsapp.R
 
 @Composable
 fun ErrorContent(
@@ -27,7 +29,7 @@ fun ErrorContent(
         // Warning Icon with a reddish tint for error context
         Icon(
             imageVector = Icons.Default.Warning,
-            contentDescription = "Error",
+            contentDescription = stringResource(R.string.ErrorContent_iconDescription),
             modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.error
         )
@@ -35,7 +37,7 @@ fun ErrorContent(
         Spacer(modifier = Modifier.height(16.dp))
 
         Text(
-            text = "Oops! Something went wrong",
+            text = stringResource(R.string.ErrorContent_title),
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onSurface
         )
@@ -58,7 +60,7 @@ fun ErrorContent(
                 containerColor = Color(0xFF7E57C2) // Your Purple theme color
             )
         ) {
-            Text("Try Again", color = Color.White)
+            Text(stringResource(R.string.ErrorContent_retry), color = Color.White)
         }
     }
 }

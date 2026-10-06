@@ -1,12 +1,15 @@
 package com.example.newsapp.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.viewModelScope
+import com.example.newsapp.R
 import com.example.newsapp.data.remote.models.SourceDto
 import com.example.newsapp.data.repository.NewsRepository
 import com.example.newsapp.viewmodel.base.BaseViewModel
 import com.example.newsapp.delegate.SearchDelegate
 import com.example.newsapp.delegate.SearchDelegateImpl
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -16,8 +19,9 @@ import kotlinx.coroutines.flow.stateIn
 
 @HiltViewModel
 class SourcesViewModel @Inject constructor(
-    private val repo: NewsRepository
-) : BaseViewModel(), SearchDelegate by SearchDelegateImpl() {
+    private val repo: NewsRepository,
+    @ApplicationContext private val appContext: Context
+) : BaseViewModel(appContext), SearchDelegate by SearchDelegateImpl() {
 
     private val _sourcesState = MutableStateFlow<SourcesUiState>(SourcesUiState.Loading)
     val sourcesState = _sourcesState.asStateFlow()
@@ -47,7 +51,7 @@ class SourcesViewModel @Inject constructor(
             if (result.sources.isNotEmpty()) {
                 _sourcesState.value = SourcesUiState.Success(result.sources)
             } else {
-                _sourcesState.value = SourcesUiState.Error("No English sources found.")
+                _sourcesState.value = SourcesUiState.Error(appContext.getString(R.string.SourcesViewModel_noEnglishSources))
             }
         }
     }

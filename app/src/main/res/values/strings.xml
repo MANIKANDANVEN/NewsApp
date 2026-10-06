@@ -1,3 +1,53 @@
 <resources>
     <string name="app_name">NewsApp</string>
+
+    <!-- Saved screen -->
+    <string name="SaveScreen_searchPlaceholder">Search saved articles…</string>
+    <string name="SaveScreen_noSavedArticles">No saved articles yet.</string>
+    <string name="SaveScreen_noResults">No results match your search.</string>
+
+    <!-- App bottom bar -->
+    <string name="AppBottomBar_headlines">Headlines</string>
+    <string name="AppBottomBar_sources">Sources</string>
+    <string name="AppBottomBar_saved">Saved</string>
+
+    <!-- Error content -->
+    <string name="ErrorContent_iconDescription">Error</string>
+    <string name="ErrorContent_title">Oops! Something went wrong</string>
+    <string name="ErrorContent_retry">Try Again</string>
+
+    <!-- News card -->
+    <string name="NewsCard_remove">Remove</string>
+    <string name="NewsCard_save">Save</string>
+
+    <!-- Saved article row -->
+    <string name="SavedArticleRow_unknownAuthor">Unknown</string>
+    <string name="SavedArticleRow_deleteDescription">Delete</string>
+
+    <!-- Search bar -->
+    <string name="SearchBar_defaultPlaceholder">Search…</string>
+    <string name="SearchBar_clearDescription">Clear search</string>
+
+    <!-- Headlines screen -->
+    <string name="HeadlinesScreen_searchPlaceholder">Search headlines…</string>
+    <string name="HeadlinesScreen_noMatchingArticles">No matching articles found.</string>
+    <string name="HeadlinesScreen_noSourcesSelectedTitle">No Sources Selected</string>
+    <string name="HeadlinesScreen_noSourcesSelectedMessage">Go to the Sources tab to pick your favorite news outlets.</string>
+
+    <!-- Sources screen -->
+    <string name="SourcesScreen_searchPlaceholder">Search sources…</string>
+    <string name="SourcesScreen_errorPrefix">Error: %1$s</string>
+    <string name="SourcesScreen_retry">Retry</string>
+    <string name="SourcesScreen_noMatchingSources">No sources match your search.</string>
+
+    <!-- Web view screen -->
+    <string name="WebViewScreen_title">Article</string>
+    <string name="WebViewScreen_backDescription">Back</string>
+    <string name="WebViewScreen_loadError">Failed to load the article. Please check your connection.</string>
+
+    <!-- BaseViewModel -->
+    <string name="BaseViewModel_unknownError">An unknown error occurred</string>
+
+    <!-- SourcesViewModel -->
+    <string name="SourcesViewModel_noEnglishSources">No English sources found.</string>
 </resources>

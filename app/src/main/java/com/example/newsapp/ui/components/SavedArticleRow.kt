@@ -21,9 +21,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import com.example.newsapp.R
 import com.example.newsapp.data.local.ArticleEntity
 
 @Composable
@@ -48,10 +50,10 @@ fun SavedArticleRow(
             )
             Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
                 Text(text = article.title, maxLines = 2, fontWeight = FontWeight.Bold)
-                Text(text = article.author ?: "Unknown", style = MaterialTheme.typography.bodySmall)
+                Text(text = article.author ?: stringResource(R.string.SavedArticleRow_unknownAuthor), style = MaterialTheme.typography.bodySmall)
             }
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red)
+                Icon(Icons.Default.Delete, contentDescription = stringResource(R.string.SavedArticleRow_deleteDescription), tint = Color.Red)
             }
         }
     }

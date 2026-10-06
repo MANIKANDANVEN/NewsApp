@@ -1,13 +1,15 @@
 package com.example.newsapp.viewmodel.base
 
+import android.content.Context
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.newsapp.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
-abstract class BaseViewModel : ViewModel() {
+abstract class BaseViewModel(private val appContext: Context) : ViewModel() {
 
     // Helper to launch coroutines with automatic error handling and loading states
     protected fun <T> safeLaunch(
@@ -24,7 +26,7 @@ abstract class BaseViewModel : ViewModel() {
                 block()
             } catch (e: Exception) {
                 // 2. Handle Error state if provided
-                val errorMessage = e.localizedMessage ?: "An unknown error occurred"
+                val errorMessage = e.localizedMessage ?: appContext.getString(R.string.BaseViewModel_unknownError)
                 errorState?.let { stateFlow?.value = it(errorMessage) }
             }
         }

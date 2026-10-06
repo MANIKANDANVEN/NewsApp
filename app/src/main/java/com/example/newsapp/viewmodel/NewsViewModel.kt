@@ -1,5 +1,6 @@
 package com.example.newsapp.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.viewModelScope
 import com.example.newsapp.data.local.ArticleEntity
 import com.example.newsapp.data.remote.models.ArticleDto
@@ -9,6 +10,7 @@ import com.example.newsapp.delegate.SearchDelegate
 import com.example.newsapp.delegate.SearchDelegateImpl
 import com.example.newsapp.viewmodel.state.NewsUiState
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -21,8 +23,9 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class NewsViewModel @Inject constructor(
-    private val repo: NewsRepository
-) : BaseViewModel(), SearchDelegate by SearchDelegateImpl() {
+    private val repo: NewsRepository,
+    @ApplicationContext context: Context
+) : BaseViewModel(context), SearchDelegate by SearchDelegateImpl() {
 
     private val _uiState = MutableStateFlow<NewsUiState>(NewsUiState.Loading)
     val uiState: StateFlow<NewsUiState> = _uiState.asStateFlow()

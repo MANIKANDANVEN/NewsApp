@@ -1,5 +1,6 @@
 package com.example.newsapp.viewmodel
 
+import android.content.Context
 import androidx.lifecycle.viewModelScope
 import com.example.newsapp.data.local.ArticleEntity
 import com.example.newsapp.data.repository.NewsRepository
@@ -7,11 +8,15 @@ import com.example.newsapp.viewmodel.base.BaseViewModel
 import com.example.newsapp.delegate.SearchDelegate
 import com.example.newsapp.delegate.SearchDelegateImpl
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.*
 
 @HiltViewModel
-class SavedViewModel @Inject constructor(private val repo: NewsRepository) : BaseViewModel(), SearchDelegate by SearchDelegateImpl() {
+class SavedViewModel @Inject constructor(
+    private val repo: NewsRepository,
+    @ApplicationContext context: Context
+) : BaseViewModel(context), SearchDelegate by SearchDelegateImpl() {
 
     // Combine the Room flow with the SearchQuery flow
     val filteredSavedArticles: StateFlow<List<ArticleEntity>> = repo.getSavedArticles()

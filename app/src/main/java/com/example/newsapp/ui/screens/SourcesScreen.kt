@@ -15,8 +15,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import com.example.newsapp.R
 import com.example.newsapp.data.remote.models.SourceDto
 import com.example.newsapp.ui.components.CommonSearchBar
 import com.example.newsapp.ui.components.SourceItem
@@ -56,7 +58,7 @@ fun SourcesContent(
         CommonSearchBar(
             query = searchQuery,
             onQueryChange = onSearchQueryChange,
-            placeholder = "Search sources..."
+            placeholder = stringResource(R.string.SourcesScreen_searchPlaceholder)
         )
 
         Box(modifier = Modifier.fillMaxWidth().weight(1f)) {
@@ -70,15 +72,18 @@ fun SourcesContent(
                         modifier = Modifier.align(Alignment.Center),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("Error: ${uiState.message}", color = MaterialTheme.colorScheme.error)
-                        Button(onClick = onRetry) { Text("Retry") }
+                        Text(
+                            stringResource(R.string.SourcesScreen_errorPrefix, uiState.message),
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Button(onClick = onRetry) { Text(stringResource(R.string.SourcesScreen_retry)) }
                     }
                 }
 
                 is SourcesUiState.Success -> {
                     if (filteredSources.isEmpty() && searchQuery.isNotEmpty()) {
                         Text(
-                            "No sources match your search.",
+                            stringResource(R.string.SourcesScreen_noMatchingSources),
                             modifier = Modifier.align(Alignment.Center)
                         )
                     } else {

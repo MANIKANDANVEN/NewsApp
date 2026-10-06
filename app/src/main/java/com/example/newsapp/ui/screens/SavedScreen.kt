@@ -12,6 +12,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.example.newsapp.R
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -55,7 +57,7 @@ fun SavedContent(
         CommonSearchBar(
             query = searchQuery,
             onQueryChange = onSearchQueryChange,
-            placeholder = "Search saved articles..."
+            placeholder = stringResource(R.string.SaveScreen_searchPlaceholder)
         )
 
         Box(
@@ -65,9 +67,9 @@ fun SavedContent(
         ) {
             if (articles.isEmpty()) {
                 val emptyMessage = if (searchQuery.isEmpty()) {
-                    "No saved articles yet."
+                    stringResource(R.string.SaveScreen_noSavedArticles)
                 } else {
-                    "No results match your search."
+                    stringResource(R.string.SaveScreen_noResults)
                 }
 
                 Text(
