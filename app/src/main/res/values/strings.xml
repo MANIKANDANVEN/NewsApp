@@ -50,4 +50,10 @@
 
     <!-- SourcesViewModel -->
     <string name="SourcesViewModel_noEnglishSources">No English sources found.</string>
+
+    <!-- NewsViewModel -->
+    <string name="NewsViewModel_noConnection">No internet connection. Please check your network and try again.</string>
+
+    <!-- Offline banner -->
+    <string name="OfflineBanner_message">You\'re offline — showing saved headlines.</string>
 </resources>
