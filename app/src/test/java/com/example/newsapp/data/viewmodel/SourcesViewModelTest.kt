@@ -1,5 +1,6 @@
 package com.example.newsapp.data.viewmodel
 
+import android.content.Context
 import com.example.newsapp.data.remote.models.SourceResponse
 import com.example.newsapp.data.repository.NewsRepository
 import com.example.newsapp.viewmodel.SourcesViewModel
@@ -17,6 +18,7 @@ import org.junit.Test
 
 class SourcesViewModelTest {
     private val repository: NewsRepository = mockk()
+    private val context: Context = mockk(relaxed = true)
     private lateinit var viewModel: SourcesViewModel
     private val testDispatcher = UnconfinedTestDispatcher()
 
@@ -26,7 +28,7 @@ class SourcesViewModelTest {
         coEvery { repository.getSources() } returns SourceResponse("ok", emptyList())
         every { repository.getSelectedSourceIds() } returns flowOf(emptySet())
 
-        viewModel = SourcesViewModel(repository)
+        viewModel = SourcesViewModel(repository, context)
     }
 
     @Test

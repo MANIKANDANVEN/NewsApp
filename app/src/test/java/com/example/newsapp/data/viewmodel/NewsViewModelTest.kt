@@ -1,9 +1,10 @@
 package com.example.newsapp.data.viewmodel
 
+import android.content.Context
 import app.cash.turbine.test
+import com.example.newsapp.connectivity.ConnectivityObserver
 import com.example.newsapp.data.local.ArticleEntity
 import com.example.newsapp.data.remote.models.ArticleDto
-import com.example.newsapp.data.remote.models.NewsResponse
 import com.example.newsapp.data.repository.NewsRepository
 import com.example.newsapp.viewmodel.NewsViewModel
 import com.example.newsapp.viewmodel.state.NewsUiState
@@ -17,6 +18,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -26,11 +28,14 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class NewsViewModelTest {
 
     private val repository: NewsRepository = mockk()
+    private val connectivityObserver: ConnectivityObserver = mockk()
+    private val context: Context = mockk(relaxed = true)
     private lateinit var viewModel: NewsViewModel
     private val testDispatcher = UnconfinedTestDispatcher()
 
@@ -44,12 +49,16 @@ class NewsViewModelTest {
         publishedAt = "2024-01-01"
     )
 
+    private fun newViewModel() = NewsViewModel(repository, connectivityObserver, context)
+
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+        every { connectivityObserver.isConnected } returns flowOf(true)
         every { repository.getSelectedSourceIds() } returns flowOf(emptySet())
         every { repository.getSavedArticles() } returns flowOf(emptyList())
-        viewModel = NewsViewModel(repository)
+        every { repository.observeCachedHeadlines(any()) } returns flowOf(emptyList())
+        viewModel = newViewModel()
     }
 
     @After
@@ -78,28 +87,61 @@ class NewsViewModelTest {
     }
 
     // -------------------------------------------------------------------------
-    // Success state
+    // Success state (cache + refresh)
     // -------------------------------------------------------------------------
 
     @Test
-    fun `when source is selected uiState becomes Success with articles`() = runTest {
+    fun `when source is selected uiState becomes Success once the cache is populated`() =
+        runTest {
+            val cacheFlow = MutableStateFlow<List<ArticleDto>>(emptyList())
+            every { repository.getSelectedSourceIds() } returns flowOf(setOf("bbc-news"))
+            every { repository.observeCachedHeadlines("bbc-news") } returns cacheFlow
+            coEvery { repository.refreshHeadlines("bbc-news") } coAnswers {
+                cacheFlow.value = listOf(mockArticle)
+                listOf(mockArticle)
+            }
+
+            viewModel = newViewModel()
+            advanceUntilIdle()
+
+            val state = viewModel.uiState.value
+            assertTrue(state is NewsUiState.Success)
+            assertEquals(listOf(mockArticle), (state as NewsUiState.Success).articles)
+        }
+
+    @Test
+    fun `cached headlines render immediately, before the network refresh resolves`() = runTest {
+        // Simulates the "first response" path: the page was already cached from a
+        // previous visit, so it's visible as soon as the source is selected.
+        val cacheFlow = MutableStateFlow(listOf(mockArticle))
         every { repository.getSelectedSourceIds() } returns flowOf(setOf("bbc-news"))
-        coEvery { repository.getTopHeadlines("bbc-news") } returns NewsResponse(listOf(mockArticle))
+        every { repository.observeCachedHeadlines("bbc-news") } returns cacheFlow
+        coEvery { repository.refreshHeadlines("bbc-news") } coAnswers {
+            delay(10_000) // network hasn't responded yet
+            listOf(mockArticle)
+        }
 
-        viewModel = NewsViewModel(repository)
-        advanceUntilIdle()
+        viewModel = newViewModel()
 
+        // Before the (still-pending) network refresh ever resolves, the cached
+        // article is already on screen.
         val state = viewModel.uiState.value
         assertTrue(state is NewsUiState.Success)
         assertEquals(listOf(mockArticle), (state as NewsUiState.Success).articles)
     }
 
     @Test
-    fun `filteredHeadlines emits articles on Success`() = runTest {
+    fun `filteredHeadlines emits articles once cache is populated`() = runTest {
+        val cacheFlow = MutableStateFlow<List<ArticleDto>>(emptyList())
         every { repository.getSelectedSourceIds() } returns flowOf(setOf("bbc-news"))
-        coEvery { repository.getTopHeadlines("bbc-news") } returns NewsResponse(listOf(mockArticle))
+        every { repository.observeCachedHeadlines("bbc-news") } returns cacheFlow
+        coEvery { repository.refreshHeadlines("bbc-news") } coAnswers {
+            cacheFlow.value = listOf(mockArticle)
+            listOf(mockArticle)
+        }
 
-        viewModel = NewsViewModel(repository)
+        viewModel = newViewModel()
+        advanceUntilIdle()
 
         viewModel.filteredHeadlines.test {
             assertEquals(listOf(mockArticle), awaitItem())
@@ -110,9 +152,10 @@ class NewsViewModelTest {
     @Test
     fun `when API returns empty articles uiState becomes Empty`() = runTest {
         every { repository.getSelectedSourceIds() } returns flowOf(setOf("bbc-news"))
-        coEvery { repository.getTopHeadlines("bbc-news") } returns NewsResponse(emptyList())
+        every { repository.observeCachedHeadlines("bbc-news") } returns flowOf(emptyList())
+        coEvery { repository.refreshHeadlines("bbc-news") } returns emptyList()
 
-        viewModel = NewsViewModel(repository)
+        viewModel = newViewModel()
         advanceUntilIdle()
 
         assertEquals(NewsUiState.Empty, viewModel.uiState.value)
@@ -123,11 +166,12 @@ class NewsViewModelTest {
     // -------------------------------------------------------------------------
 
     @Test
-    fun `when API throws uiState becomes Error`() = runTest {
+    fun `when refresh throws and there is no cache uiState becomes Error`() = runTest {
         every { repository.getSelectedSourceIds() } returns flowOf(setOf("bbc-news"))
-        coEvery { repository.getTopHeadlines(any()) } throws Exception("Network Timeout")
+        every { repository.observeCachedHeadlines("bbc-news") } returns flowOf(emptyList())
+        coEvery { repository.refreshHeadlines(any()) } throws Exception("Boom")
 
-        viewModel = NewsViewModel(repository)
+        viewModel = newViewModel()
         advanceUntilIdle()
 
         assertTrue(viewModel.uiState.value is NewsUiState.Error)
@@ -135,23 +179,71 @@ class NewsViewModelTest {
 
     @Test
     fun `error message is propagated into Error state`() = runTest {
-        val errorMessage = "Network Timeout"
+        val errorMessage = "Something broke"
         every { repository.getSelectedSourceIds() } returns flowOf(setOf("bbc-news"))
-        coEvery { repository.getTopHeadlines(any()) } throws Exception(errorMessage)
+        every { repository.observeCachedHeadlines("bbc-news") } returns flowOf(emptyList())
+        coEvery { repository.refreshHeadlines(any()) } throws Exception(errorMessage)
 
-        viewModel = NewsViewModel(repository)
+        viewModel = newViewModel()
         advanceUntilIdle()
 
         val state = viewModel.uiState.value as? NewsUiState.Error
         assertEquals(errorMessage, state?.message)
+        assertEquals(false, state?.isOffline)
+    }
+
+    @Test
+    fun `when offline and there is no cache uiState becomes an offline Error`() = runTest {
+        every { connectivityObserver.isConnected } returns flowOf(false)
+        every { repository.getSelectedSourceIds() } returns flowOf(setOf("bbc-news"))
+        every { repository.observeCachedHeadlines("bbc-news") } returns flowOf(emptyList())
+
+        viewModel = newViewModel()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as? NewsUiState.Error
+        assertTrue(state != null && state.isOffline)
+        coVerify(exactly = 0) { repository.refreshHeadlines(any()) }
+    }
+
+    @Test
+    fun `an IOException from the network is treated as an offline error`() = runTest {
+        every { repository.getSelectedSourceIds() } returns flowOf(setOf("bbc-news"))
+        every { repository.observeCachedHeadlines("bbc-news") } returns flowOf(emptyList())
+        coEvery { repository.refreshHeadlines(any()) } throws IOException("timeout")
+
+        viewModel = newViewModel()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value as? NewsUiState.Error
+        assertTrue(state != null && state.isOffline)
+    }
+
+    @Test
+    fun `going offline does not clobber headlines already on screen`() = runTest {
+        // Cache already has data (e.g. from a previous successful refresh); a later
+        // refresh attempt while offline should leave the Success state alone instead
+        // of replacing it with an error.
+        val cacheFlow = MutableStateFlow(listOf(mockArticle))
+        every { connectivityObserver.isConnected } returns flowOf(false)
+        every { repository.getSelectedSourceIds() } returns flowOf(setOf("bbc-news"))
+        every { repository.observeCachedHeadlines("bbc-news") } returns cacheFlow
+
+        viewModel = newViewModel()
+        advanceUntilIdle()
+
+        val state = viewModel.uiState.value
+        assertTrue(state is NewsUiState.Success)
+        assertEquals(listOf(mockArticle), (state as NewsUiState.Success).articles)
     }
 
     @Test
     fun `filteredHeadlines emits empty list when uiState is Error`() = runTest {
         every { repository.getSelectedSourceIds() } returns flowOf(setOf("bbc-news"))
-        coEvery { repository.getTopHeadlines(any()) } throws Exception("API Error")
+        every { repository.observeCachedHeadlines("bbc-news") } returns flowOf(emptyList())
+        coEvery { repository.refreshHeadlines(any()) } throws Exception("API Error")
 
-        viewModel = NewsViewModel(repository)
+        viewModel = newViewModel()
 
         viewModel.filteredHeadlines.test {
             assertEquals(emptyList<ArticleDto>(), awaitItem())
@@ -165,10 +257,15 @@ class NewsViewModelTest {
 
     @Test
     fun `refreshHeadlines re-fetches and updates uiState to Success`() = runTest {
+        val cacheFlow = MutableStateFlow<List<ArticleDto>>(emptyList())
         every { repository.getSelectedSourceIds() } returns flowOf(setOf("bbc-news"))
-        coEvery { repository.getTopHeadlines("bbc-news") } returns NewsResponse(listOf(mockArticle))
+        every { repository.observeCachedHeadlines("bbc-news") } returns cacheFlow
+        coEvery { repository.refreshHeadlines("bbc-news") } coAnswers {
+            cacheFlow.value = listOf(mockArticle)
+            listOf(mockArticle)
+        }
 
-        viewModel = NewsViewModel(repository)
+        viewModel = newViewModel()
         advanceUntilIdle()
 
         // Trigger a manual refresh
@@ -188,7 +285,7 @@ class NewsViewModelTest {
 
         // Should remain Empty — no network call
         assertEquals(NewsUiState.Empty, viewModel.uiState.value)
-        coVerify(exactly = 0) { repository.getTopHeadlines(any()) }
+        coVerify(exactly = 0) { repository.refreshHeadlines(any()) }
     }
 
     // -------------------------------------------------------------------------
@@ -202,9 +299,9 @@ class NewsViewModelTest {
             mockArticle.copy(title = "Android News")
         )
         every { repository.getSelectedSourceIds() } returns flowOf(setOf("bbc-news"))
-        coEvery { repository.getTopHeadlines("bbc-news") } returns NewsResponse(articles)
+        every { repository.observeCachedHeadlines("bbc-news") } returns flowOf(articles)
 
-        viewModel = NewsViewModel(repository)
+        viewModel = newViewModel()
 
         viewModel.filteredHeadlines.test {
             assertEquals(articles, awaitItem())
@@ -219,9 +316,9 @@ class NewsViewModelTest {
             mockArticle.copy(title = "Android News")
         )
         every { repository.getSelectedSourceIds() } returns flowOf(setOf("bbc-news"))
-        coEvery { repository.getTopHeadlines("bbc-news") } returns NewsResponse(articles)
+        every { repository.observeCachedHeadlines("bbc-news") } returns flowOf(articles)
 
-        viewModel = NewsViewModel(repository)
+        viewModel = newViewModel()
         viewModel.onSearchQueryChange("kotlin")
 
         viewModel.filteredHeadlines.test {
@@ -236,9 +333,9 @@ class NewsViewModelTest {
     fun `filteredHeadlines returns empty list when query matches nothing`() = runTest {
         val articles = listOf(mockArticle.copy(title = "Kotlin Tips"))
         every { repository.getSelectedSourceIds() } returns flowOf(setOf("bbc-news"))
-        coEvery { repository.getTopHeadlines("bbc-news") } returns NewsResponse(articles)
+        every { repository.observeCachedHeadlines("bbc-news") } returns flowOf(articles)
 
-        viewModel = NewsViewModel(repository)
+        viewModel = newViewModel()
         viewModel.onSearchQueryChange("swift")
 
         viewModel.filteredHeadlines.test {
@@ -254,9 +351,9 @@ class NewsViewModelTest {
             mockArticle.copy(title = "Android News")
         )
         every { repository.getSelectedSourceIds() } returns flowOf(setOf("bbc-news"))
-        coEvery { repository.getTopHeadlines("bbc-news") } returns NewsResponse(articles)
+        every { repository.observeCachedHeadlines("bbc-news") } returns flowOf(articles)
 
-        viewModel = NewsViewModel(repository)
+        viewModel = newViewModel()
         viewModel.onSearchQueryChange("kotlin")
         viewModel.onSearchQueryChange("") // clear
 
@@ -346,7 +443,7 @@ class NewsViewModelTest {
             )
         )
         every { repository.getSavedArticles() } returns flowOf(savedEntities)
-        viewModel = NewsViewModel(repository)
+        viewModel = newViewModel()
 
         viewModel.savedArticleUrls.test {
             assertEquals(setOf("https://example.com"), awaitItem())
@@ -357,7 +454,7 @@ class NewsViewModelTest {
     @Test
     fun `savedArticleUrls emits empty set when no articles are saved`() = runTest {
         every { repository.getSavedArticles() } returns flowOf(emptyList())
-        viewModel = NewsViewModel(repository)
+        viewModel = newViewModel()
 
         viewModel.savedArticleUrls.test {
             assertEquals(emptySet<String>(), awaitItem())
@@ -372,14 +469,24 @@ class NewsViewModelTest {
     @Test
     fun `switching source ids triggers a new fetch`() = runTest {
         val sourceIdsFlow = MutableSharedFlow<Set<String>>()
+        val cacheFlowA = MutableStateFlow<List<ArticleDto>>(emptyList())
+        val cacheFlowB = MutableStateFlow<List<ArticleDto>>(emptyList())
         val articlesA = listOf(mockArticle.copy(title = "Source A"))
         val articlesB = listOf(mockArticle.copy(title = "Source B"))
 
         every { repository.getSelectedSourceIds() } returns sourceIdsFlow
-        coEvery { repository.getTopHeadlines("source-a") } returns NewsResponse(articlesA)
-        coEvery { repository.getTopHeadlines("source-b") } returns NewsResponse(articlesB)
+        every { repository.observeCachedHeadlines("source-a") } returns cacheFlowA
+        every { repository.observeCachedHeadlines("source-b") } returns cacheFlowB
+        coEvery { repository.refreshHeadlines("source-a") } coAnswers {
+            cacheFlowA.value = articlesA
+            articlesA
+        }
+        coEvery { repository.refreshHeadlines("source-b") } coAnswers {
+            cacheFlowB.value = articlesB
+            articlesB
+        }
 
-        val vm = NewsViewModel(repository)
+        val vm = newViewModel()
         sourceIdsFlow.emit(setOf("source-a"))
         advanceUntilIdle()
 
@@ -396,10 +503,15 @@ class NewsViewModelTest {
     @Test
     fun `deselecting all sources resets uiState to Empty`() = runTest {
         val sourceIdsFlow = MutableSharedFlow<Set<String>>()
+        val cacheFlow = MutableStateFlow<List<ArticleDto>>(emptyList())
         every { repository.getSelectedSourceIds() } returns sourceIdsFlow
-        coEvery { repository.getTopHeadlines(any()) } returns NewsResponse(listOf(mockArticle))
+        every { repository.observeCachedHeadlines("bbc-news") } returns cacheFlow
+        coEvery { repository.refreshHeadlines("bbc-news") } coAnswers {
+            cacheFlow.value = listOf(mockArticle)
+            listOf(mockArticle)
+        }
 
-        val vm = NewsViewModel(repository)
+        val vm = newViewModel()
         sourceIdsFlow.emit(setOf("bbc-news"))
         advanceUntilIdle()
         assertTrue(vm.uiState.value is NewsUiState.Success)

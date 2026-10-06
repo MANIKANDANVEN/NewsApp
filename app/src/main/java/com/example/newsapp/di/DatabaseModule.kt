@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.example.newsapp.data.local.AppDatabase
 import com.example.newsapp.data.local.ArticleDao
+import com.example.newsapp.data.local.HeadlineDao
 import com.example.newsapp.data.local.SourcePreferences
 import dagger.Module
 import dagger.Provides
@@ -23,11 +24,18 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "news_database"
-        ).build()
+        )
+            // cached_headlines is a disposable network cache, not user data,
+            // so a schema bump can just drop and recreate it.
+            .fallbackToDestructiveMigration()
+            .build()
     }
 
     @Provides
     fun provideArticleDao(db: AppDatabase): ArticleDao = db.articleDao()
+
+    @Provides
+    fun provideHeadlineDao(db: AppDatabase): HeadlineDao = db.headlineDao()
 
     @Provides
     @Singleton

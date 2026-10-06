@@ -1,5 +1,6 @@
 package com.example.newsapp.data.viewmodel
 
+import android.content.Context
 import app.cash.turbine.test
 import com.example.newsapp.data.local.ArticleEntity
 import com.example.newsapp.data.repository.NewsRepository
@@ -26,6 +27,7 @@ import org.junit.Test
 class SavedViewModelTest {
 
     private val repository: NewsRepository = mockk()
+    private val context: Context = mockk(relaxed = true)
     private val testDispatcher = UnconfinedTestDispatcher()
 
     // Backing flow we push updates into — simulates Room emitting new snapshots
@@ -74,7 +76,7 @@ class SavedViewModelTest {
 
     @Test
     fun `filteredSavedArticles initial value is empty list`() = runTest {
-        val viewModel = SavedViewModel(repository)
+        val viewModel = SavedViewModel(repository, context)
 
         assertEquals(emptyList<ArticleEntity>(), viewModel.filteredSavedArticles.value)
     }
@@ -85,7 +87,7 @@ class SavedViewModelTest {
 
     @Test
     fun `filteredSavedArticles reflects repository emissions when query is blank`() = runTest {
-        val viewModel = SavedViewModel(repository)
+        val viewModel = SavedViewModel(repository, context)
 
         viewModel.filteredSavedArticles.test {
             assertEquals(emptyList<ArticleEntity>(), awaitItem()) // stateIn seed
@@ -103,7 +105,7 @@ class SavedViewModelTest {
     @Test
     fun `filteredSavedArticles reflects removal from repository`() = runTest {
         savedArticlesFlow.value = listOf(articleKotlin, articleAndroid)
-        val viewModel = SavedViewModel(repository)
+        val viewModel = SavedViewModel(repository, context)
 
         viewModel.filteredSavedArticles.test {
             assertEquals(listOf(articleKotlin, articleAndroid), awaitItem())
@@ -122,7 +124,7 @@ class SavedViewModelTest {
     @Test
     fun `filteredSavedArticles filters by title case-insensitively`() = runTest {
         savedArticlesFlow.value = listOf(articleKotlin, articleAndroid)
-        val viewModel = SavedViewModel(repository)
+        val viewModel = SavedViewModel(repository, context)
 
         viewModel.onSearchQueryChange("kotlin")
 
@@ -137,7 +139,7 @@ class SavedViewModelTest {
     @Test
     fun `filteredSavedArticles title match is case-insensitive for uppercase query`() = runTest {
         savedArticlesFlow.value = listOf(articleKotlin, articleAndroid)
-        val viewModel = SavedViewModel(repository)
+        val viewModel = SavedViewModel(repository, context)
 
         viewModel.onSearchQueryChange("ANDROID")
 
@@ -156,7 +158,7 @@ class SavedViewModelTest {
     @Test
     fun `filteredSavedArticles filters by description when title does not match`() = runTest {
         savedArticlesFlow.value = listOf(articleKotlin, articleAndroid)
-        val viewModel = SavedViewModel(repository)
+        val viewModel = SavedViewModel(repository, context)
 
         // "coroutines" only appears in articleKotlin's description
         viewModel.onSearchQueryChange("coroutines")
@@ -172,7 +174,7 @@ class SavedViewModelTest {
     @Test
     fun `filteredSavedArticles description match is case-insensitive`() = runTest {
         savedArticlesFlow.value = listOf(articleKotlin, articleAndroid)
-        val viewModel = SavedViewModel(repository)
+        val viewModel = SavedViewModel(repository, context)
 
         viewModel.onSearchQueryChange("COMPOSE")
 
@@ -187,7 +189,7 @@ class SavedViewModelTest {
     @Test
     fun `filteredSavedArticles does not crash when description is null`() = runTest {
         savedArticlesFlow.value = listOf(articleNoDesc, articleKotlin)
-        val viewModel = SavedViewModel(repository)
+        val viewModel = SavedViewModel(repository, context)
 
         // Query matches articleKotlin title but articleNoDesc has null description — no crash
         viewModel.onSearchQueryChange("kotlin")
@@ -203,7 +205,7 @@ class SavedViewModelTest {
     @Test
     fun `article with null description is still returned when title matches`() = runTest {
         savedArticlesFlow.value = listOf(articleNoDesc)
-        val viewModel = SavedViewModel(repository)
+        val viewModel = SavedViewModel(repository, context)
 
         viewModel.onSearchQueryChange("No Description")
 
@@ -218,7 +220,7 @@ class SavedViewModelTest {
     @Test
     fun `filteredSavedArticles returns empty list when query matches nothing`() = runTest {
         savedArticlesFlow.value = listOf(articleKotlin, articleAndroid)
-        val viewModel = SavedViewModel(repository)
+        val viewModel = SavedViewModel(repository, context)
 
         viewModel.onSearchQueryChange("swift")
 
@@ -235,7 +237,7 @@ class SavedViewModelTest {
     @Test
     fun `clearing search query restores full article list`() = runTest {
         savedArticlesFlow.value = listOf(articleKotlin, articleAndroid)
-        val viewModel = SavedViewModel(repository)
+        val viewModel = SavedViewModel(repository, context)
 
         viewModel.onSearchQueryChange("kotlin")
         viewModel.onSearchQueryChange("") // clear
@@ -253,7 +255,7 @@ class SavedViewModelTest {
     @Test
     fun `deleteArticle calls repository deleteArticle with the correct entity`() = runTest {
         coEvery { repository.deleteArticle(any()) } returns Unit
-        val viewModel = SavedViewModel(repository)
+        val viewModel = SavedViewModel(repository, context)
 
         viewModel.deleteArticle(articleKotlin)
         advanceUntilIdle() // wait for safeLaunch coroutine to complete
@@ -264,7 +266,7 @@ class SavedViewModelTest {
     @Test
     fun `deleteArticle does not call saveArticle`() = runTest {
         coEvery { repository.deleteArticle(any()) } returns Unit
-        val viewModel = SavedViewModel(repository)
+        val viewModel = SavedViewModel(repository, context)
 
         viewModel.deleteArticle(articleKotlin)
         advanceUntilIdle()
@@ -275,7 +277,7 @@ class SavedViewModelTest {
     @Test
     fun `deleteArticle can be called multiple times for different articles`() = runTest {
         coEvery { repository.deleteArticle(any()) } returns Unit
-        val viewModel = SavedViewModel(repository)
+        val viewModel = SavedViewModel(repository, context)
 
         viewModel.deleteArticle(articleKotlin)
         viewModel.deleteArticle(articleAndroid)
@@ -293,7 +295,7 @@ class SavedViewModelTest {
             savedArticlesFlow.value = listOf(articleAndroid)
         }
 
-        val viewModel = SavedViewModel(repository)
+        val viewModel = SavedViewModel(repository, context)
 
         viewModel.filteredSavedArticles.test {
             assertEquals(listOf(articleKotlin, articleAndroid), awaitItem())
